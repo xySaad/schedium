@@ -4,29 +4,38 @@
 
 | Field | Type | Notes |
 | --- | --- | --- |
+| `id` | `int` | Unique identifier (Snowflake) |
 | `title` | `Signal<String>` | Required |
 | `description` | `Signal<String?>` | Optional |
-| `state` | `Signal<State>` | Defaults to `State.undone` |
+| `state` | `Signal<TaskState>` | Defaults to `TaskState.undone` |
 | `isDeleted` | `Signal<bool>` | Soft-delete flag, defaults to `false` |
 
-All fields are signals, so UI that reads them inside a `SignalBuilder` updates
-automatically, and the persistence effect in `main.dart` notices changes.
+All mutable fields are signals, so UI that reads them inside a `SignalBuilder` updates
+automatically.
 
-### JSON shape
+## `PersistentTask` (`lib/model/task/persistent_task.dart`)
 
-```json
-{
-  "title": "Buy milk",
-  "description": "Semi-skimmed",
-  "state": "undone",
-  "isDeleted": false
-}
-```
+Extends `Task` and implements `PersistentItem<database.$TasksTable, database.Task>` to provide automatic SQLite persistence via Drift.
 
-`Task.fromJson` falls back to `State.undone` for an unknown state name and to
-`false` for a missing `isDeleted`, so older saved data keeps loading.
+- `PersistentTask.fromRow(database.Task task)`: Creates an instance from a Drift database row.
+- `toCompanion()`: Maps the task signals to a `database.Task` row object.
+- `syncToDB(GeneratedDatabase db, TaskTableInfo table)`: Subscribes to the `title`, `description`, `state`, and `isDeleted` signals, writing changes to SQLite whenever any signal is mutated.
 
-## `State` (`lib/model/task/state.dart`)
+## Database schema (`lib/database/tables/tasks_table.dart`)
+
+Tasks are stored in a local SQLite database named `'schedium'` using Drift (`AppDatabase` in `lib/database/database.dart`).
+
+The `Tasks` table defines:
+
+| Column | Drift Type | Dart Type | Notes |
+| --- | --- | --- | --- |
+| `id` | `IntColumn` | `int` | Primary key (Snowflake ID) |
+| `title` | `TextColumn` | `String` | Required |
+| `description` | `TextColumn` | `String?` | Nullable |
+| `state` | `TextColumn` | `TaskState` | Stored as text enum (`textEnum<TaskState>()`) |
+| `isDeleted` | `BoolColumn` | `bool` | Soft-delete flag |
+
+## `TaskState` (`lib/model/task/task_state.dart`)
 
 An enum carrying its own presentation data:
 
@@ -36,26 +45,23 @@ An enum carrying its own presentation data:
 | `done` | `check_circle_rounded` | `Palette.done` |
 | `ignored` | `remove_circle_rounded` | `Palette.ignored` |
 
-Because the enum is named `State`, import the model barrel with a prefix
-(`import 'package:schedium/model/model.dart' as model;` → `model.State`) to avoid
-clashing with Flutter's `State<T>`.
-
 ## `AppState` (`lib/model/app_state.dart`)
 
 | Member | Type | Purpose |
 | --- | --- | --- |
 | `title` | `Signal<String>` | App bar title |
-| `tasks` | `Signal<List<Task>>` | All tasks, including soft-deleted ones |
+| `tasks` | `PersistentListSignal<database.Task, model.PersistentTask>` | Database-backed reactive task list |
 | `navigation` | `Navigation` | Screen history stack |
 | `currentScreen` | `Computed<Widget>` | Top of the history stack |
+| `nextId` | `Snowflake` | Snowflake generator for unique 64-bit entity IDs |
 
-## Persistence (`TaskService`)
+## Persistence (`PersistentListSignal`, `PersistentTask`, `AppDatabase`)
 
-- Storage: `SharedPreferences`, key `tasks`, value is a JSON-encoded list of tasks.
-- `saveTasks(List<Task>)` serialises every task (including soft-deleted ones).
-- `loadTasks()` returns `[]` when nothing is stored or when decoding fails.
+- Storage: SQLite via `drift` and `drift_flutter` (database name: `'schedium'`).
+- `PersistentListSignal.loadFromDB(db, table, rowToItem)` queries stored rows asynchronously on startup, instantiates `PersistentTask`s, hooks up their DB sync, and emits the list to signal subscribers.
+- Adding a task via `appState.tasks.add(task)` inserts the record into the database table and attaches `syncToDB` to watch for future signal mutations.
+- `TaskService` (`lib/model/task/task_service.dart`) provides helper methods (`loadAll`, `update`, `rowToTask`) for querying and updating tasks directly on the database.
 
 ## Deleting tasks
 
-Deletion is a **soft delete**: `task.isDeleted.value = true`. The task stays in
-`appState.tasks` and in storage; `Home` filters out tasks where `isDeleted` is true.
+Deletion is a **soft delete**: `task.isDeleted.value = true`. The task's `syncToDB` listener automatically updates the `isDeleted` column in the database; `Home` filters out tasks where `isDeleted` is true.

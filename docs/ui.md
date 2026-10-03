@@ -48,7 +48,7 @@ Every widget lives in its own file.
 | `TaskMenu` | `task/task_menu.dart` | Overflow (⋮) menu on the task screen. Currently offers **Delete**. |
 | `StateSelector` | `task/state_selector.dart` | Two toggleable chips (`done`, `ignored`); selecting the active chip returns the task to `undone`. |
 | `StateChip` | `state_chip.dart` | Pill-shaped icon (+ optional label) button with press animation. |
-| `ConfirmationDialog` | `confirmation_dialog.dart` | Themed `AlertDialog`; pops `true` on confirm, `false` on cancel. |
+| `ConfirmationDialog` | `../dialogs/confirmation_dialog.dart` | Themed `AlertDialog`; pops `true` on confirm, `false` on cancel. |
 | `TitleField` | `title_field.dart` | Large borderless text field for the title. |
 | `DescriptionField` | `description_field.dart` | Multi-line field in a rounded surface container. |
 | `SectionLabel` | `section_label.dart` | Small muted label above a section. |

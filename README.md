@@ -9,7 +9,7 @@ are stored locally on the device.
 | Document                             | What it covers                                                       |
 | ------------------------------------ | -------------------------------------------------------------------- |
 | [Architecture](docs/architecture.md) | Project layout, app startup, navigation, data flow                   |
-| [Data model](docs/data-model.md)     | `Task`, `State`, `AppState` and JSON persistence                     |
+| [Data model](docs/data-model.md)     | `Task`, `TaskState`, `AppState`, and Drift (SQLite) persistence      |
 | [UI](docs/ui.md)                     | Screens, widgets, theme and palette                                  |
 | [Features](docs/features.md)         | User-facing behaviour: creating, editing, completing, deleting tasks |
 
@@ -17,7 +17,8 @@ are stored locally on the device.
 
 - **Flutter** (Material 3, dark theme)
 - **signals_flutter**: all reactive state (`signal`, `computed`, `effect`, `SignalBuilder`)
-- **shared_preferences**: local persistence of tasks as a JSON string
+- **drift** & **drift_flutter**: local SQLite database persistence
+- **snowflake_dart**: unique ID generation for tasks
 
 ## Quick start
 

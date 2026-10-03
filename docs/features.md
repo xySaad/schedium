@@ -24,12 +24,12 @@ Done tasks show a strikethrough title; ignored tasks show a muted title.
 On confirmation the app returns to the home screen and the task disappears from the
 list. Cancelling (or tapping outside the dialog) leaves the task untouched.
 
-Deletion is a soft delete: the task is flagged with `isDeleted` and remains in local
-storage. There is currently no UI to restore or permanently purge deleted tasks.
+Deletion is a soft delete: the task is flagged with `isDeleted` and remains in the
+database. There is currently no UI to restore or permanently purge deleted tasks.
 
 ## Persistence
-Tasks are saved to the device automatically after every change and reloaded on the
-next launch.
+Tasks are saved to a local SQLite database via Drift automatically after every
+change and reloaded on the next launch.
 
 ## Navigation
 The app bar shows a back button whenever you are not on the home screen.

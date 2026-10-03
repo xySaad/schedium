@@ -4,37 +4,40 @@
 
 ```
 lib/
-├── main.dart                 # Entry point: loads tasks, wires persistence, runs app
+├── main.dart                 # Entry point: initializes database, loads tasks, runs app
 ├── app.dart                  # SchediumApp (MaterialApp + AppBar) and BackNavigation
 ├── schedium.dart             # Barrel: exports schedium.Widget and Navigation
 ├── schedium/
 │   ├── widget.dart           # schedium.Widget: StatelessWidget that carries AppState
-│   └── navigation.dart       # Navigation: signal-based screen history
+│   ├── navigation.dart       # Navigation: signal-based screen history
+│   ├── persistent_item.dart  # PersistentItem: interface for database-synced models
+│   └── persistent_list_signal.dart # PersistentListSignal: Signal list backed by Drift table
+├── database/
+│   ├── database.dart         # AppDatabase: Drift SQLite database definition & exports
+│   └── tables/               # Table schemas (tasks_table.dart)
 ├── model/
-│   ├── model.dart            # Barrel: exports AppState and Task
-│   ├── app_state.dart        # AppState: title, tasks, navigation, current screen
+│   ├── model.dart            # Barrel: exports AppState, Task, TaskState, PersistentTask
+│   ├── app_state.dart        # AppState: title, tasks, navigation, current screen, nextId
 │   └── task/
-│       ├── task.dart         # Task (+ JSON serialisation)
-│       ├── state.dart        # State enum (undone / done / ignored)
-│       └── task_service.dart # Load/save tasks via shared_preferences
+│       ├── task.dart         # Task model with reactive signal fields
+│       ├── persistent_task.dart # PersistentTask: extends Task with Drift auto-syncing
+│       ├── task_state.dart   # TaskState enum (undone / done / ignored)
+│       └── task_service.dart # Database query service for tasks
 └── ui/
     ├── theme/                # app_theme.dart, palette.dart
     ├── screens/              # home.dart, task.dart (+ screens.dart barrel)
+    ├── dialogs/              # confirmation_dialog.dart
     └── widgets/              # Reusable widgets (one widget per file)
         └── task/             # Task-specific widgets
 ```
 
 ## Startup (`main.dart`)
 
-1. `TaskService.loadTasks()` reads saved tasks (an empty list if nothing is stored
-   or the stored data is corrupt).
-2. An `AppState` is created with the title `Schedium` and the loaded tasks.
-3. An `effect()` subscribes to the tasks list and to every task's `title`,
-   `description`, `state` and `isDeleted` signals. Whenever any of them change,
-   `TaskService.saveTasks(tasks)` runs. This is the **only** place persistence
-   is triggered; UI code never calls the service directly.
-4. The `Home` screen is pushed onto the navigation history and `runApp` starts
-   `SchediumApp`.
+1. `WidgetsFlutterBinding.ensureInitialized()` ensures Flutter engine bindings are initialized.
+2. `AppDatabase` is instantiated, opening the SQLite database `schedium` via `drift_flutter`.
+3. `PersistentListSignal.loadFromDB(db, db.tasks, (r) => model.PersistentTask.fromRow(r))` initializes an empty signal list, queries the tasks table asynchronously, converts each row to a `PersistentTask`, and wires up reactive persistence (`item.syncToDB(db, table)`).
+4. An `AppState` is created with the title `Schedium`, the database-backed `tasks` signal, and `nodeId: 0` for Snowflake ID generation.
+5. The `Home` screen is pushed onto the navigation history and `runApp` starts `SchediumApp`.
 
 ## Navigation
 
@@ -57,11 +60,13 @@ through the custom history.
 UI event ──► mutate a signal (task.title.value = ..., appState.tasks.add(...))
                 │
                 ├──► SignalBuilder widgets rebuild
-                └──► effect() in main.dart ──► TaskService.saveTasks ──► SharedPreferences
+                └──► PersistentTask.syncToDB / PersistentListSignal.add ──► Drift (SQLite)
 ```
 
-State flows one way: widgets mutate signals, and everything else (rebuilds and
-persistence) reacts to them.
+State flows one way: widgets mutate signals, and reactive subscriptions
+(`PersistentTask.syncToDB` for task field updates, and `PersistentListSignal.add`
+for new entries) automatically write changes through to the SQLite database via
+Drift.
 
 ## Widget base class
 
