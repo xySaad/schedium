@@ -15,14 +15,14 @@ class StateSelector extends StatelessWidget {
         return Row(
           spacing: 8,
           children: [
-            for (final state in [model.State.done, model.State.ignored])
+            for (final state in [model.TaskState.done, model.TaskState.ignored])
               StateChip(
                 label: state.name,
                 icon: state.icon,
                 activeColor: state.color,
                 isActive: current == state,
                 onTap: () => task.state.value = current == state
-                    ? model.State.undone
+                    ? model.TaskState.undone
                     : state,
               ),
           ],

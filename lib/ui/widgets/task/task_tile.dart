@@ -10,7 +10,7 @@ class TaskTile extends StatelessWidget {
   final model.Task task;
   final VoidCallback onTap;
 
-  void toggleState(model.State a, b) {
+  void toggleState(model.TaskState a, b) {
     final state = task.state;
     state.value = state.value == a ? b : a;
   }
@@ -52,11 +52,13 @@ class TaskTile extends StatelessWidget {
                         icon: state.icon,
                         activeColor: state.color,
                         isActive: true,
-                        onTap: () =>
-                            toggleState(model.State.undone, model.State.done),
+                        onTap: () => toggleState(
+                          model.TaskState.undone,
+                          model.TaskState.done,
+                        ),
                         onLongPress: () => toggleState(
-                          model.State.ignored,
-                          model.State.undone,
+                          model.TaskState.ignored,
+                          model.TaskState.undone,
                         ),
                       ),
 
@@ -69,12 +71,12 @@ class TaskTile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: state == model.State.ignored
+                                color: state == model.TaskState.ignored
                                     ? Palette.muted
                                     : Palette.text,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                decoration: state == model.State.done
+                                decoration: state == model.TaskState.done
                                     ? TextDecoration.lineThrough
                                     : TextDecoration.none,
                                 decorationColor: Palette.muted,

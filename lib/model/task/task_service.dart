@@ -1,29 +1,26 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:schedium/model/task/task.dart';
+import 'package:schedium/database/database.dart' as database;
+import 'package:schedium/model/model.dart' as model;
 
 class TaskService {
-  static const _key = 'tasks';
+  TaskService(this.db);
 
-  Future<void> saveTasks(List<Task> tasks) async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonList = tasks.map((t) => t.toJson()).toList();
-    final jsonString = jsonEncode(jsonList);
-    await prefs.setString(_key, jsonString);
+  final database.$AppDatabase db;
+
+  Future<List<model.Task>> loadAll() async {
+    final rows = await db.select(db.tasks).get();
+    final tasks = rows.map(rowToTask).toList();
+    return tasks;
   }
 
-  Future<List<Task>> loadTasks() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-    if (jsonString == null) {
-      return [];
-    }
-    
-    try {
-      final jsonList = jsonDecode(jsonString) as List<dynamic>;
-      return jsonList.map((e) => Task.fromJson(e as Map<String, dynamic>)).toList();
-    } catch (e) {
-      return [];
-    }
+  Future<int> update(int id, database.TasksCompanion companion) {
+    final stmt = db.update(db.tasks)..where((t) => t.id.equals(id));
+    return stmt.write(companion);
   }
+
+  model.Task rowToTask(database.Task row) => model.Task(
+    row.id,
+    row.title,
+    description: row.description,
+    state: row.state,
+  );
 }
