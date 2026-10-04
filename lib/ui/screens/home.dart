@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:schedium/model/model.dart';
 import 'package:schedium/schedium.dart' as schedium;
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:snowflake_dart/snowflake_dart.dart';
 import 'screens.dart' as screens;
-import 'package:schedium/model/model.dart' as model;
 import 'package:schedium/ui/theme/palette.dart';
 import '../widgets/task/task_tile.dart';
 
@@ -15,7 +15,7 @@ class Home extends schedium.Widget {
     return Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          final task = model.PersistentTask(
+          final task = TaskModel.create(
             Snowflake(nodeId: 0).generate(),
             "New Task",
           );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:schedium/model/model.dart' as model;
 import 'package:schedium/database/database.dart';
+import 'package:schedium/model/task/task.dart';
 import 'package:schedium/schedium/persistent_list_signal.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'ui/screens/screens.dart' as screens;
@@ -9,10 +10,16 @@ import 'app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final db = AppDatabase();
-  final tasks = PersistentListSignal.loadFromDB(
+  final tasks = PersistentListSignal<$TasksTable, Task, TaskModel>.loadFromDB(
     db,
     db.tasks,
-    (r) => model.PersistentTask.fromRow(r),
+    (t) => TaskModel(
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      isDeleted: t.isDeleted,
+      state: t.state,
+    ),
   );
 
   final appState = model.AppState(

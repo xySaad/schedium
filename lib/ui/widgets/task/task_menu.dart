@@ -10,7 +10,7 @@ enum TaskMenuAction { delete }
 class TaskMenu extends schedium.Widget {
   const TaskMenu(super.appState, {super.key, required this.task});
 
-  final model.Task task;
+  final model.TaskModel task;
 
   Future<void> confirmDelete(BuildContext context) async {
     final result = await showDialog<bool>(

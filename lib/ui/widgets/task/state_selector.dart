@@ -5,7 +5,7 @@ import '../state_chip.dart';
 
 class StateSelector extends StatelessWidget {
   const StateSelector({super.key, required this.task});
-  final model.Task task;
+  final model.TaskModel task;
 
   @override
   Widget build(BuildContext context) {

@@ -11,7 +11,7 @@ import '../widgets/title_field.dart';
 
 class Task extends schedium.Widget {
   const Task(super.appState, {super.key, required this.data});
-  final model.Task data;
+  final model.TaskModel data;
 
   void saveTitle(String value) {
     data.title.value = value;

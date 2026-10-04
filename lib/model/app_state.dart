@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:schedium/database/database.dart' as database;
+import 'package:schedium/database/database.dart';
+import 'package:schedium/model/model.dart';
 import 'package:schedium/schedium.dart' as schedium;
 import 'package:schedium/schedium/persistent_list_signal.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:snowflake_dart/snowflake_dart.dart';
-import 'model.dart' as model;
 
 class AppState {
   AppState({
@@ -17,7 +17,7 @@ class AppState {
   }
 
   final Signal<String> title;
-  final PersistentListSignal<database.Task, model.PersistentTask> tasks;
+  final PersistentListSignal<$TasksTable, Task, TaskModel> tasks;
   final navigation = schedium.Navigation();
   late final currentScreen = computed(() => navigation.history.value.last);
   final Snowflake nextId;

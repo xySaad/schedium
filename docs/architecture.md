@@ -10,19 +10,19 @@ lib/
 ├── schedium/
 │   ├── widget.dart           # schedium.Widget: StatelessWidget that carries AppState
 │   ├── navigation.dart       # Navigation: signal-based screen history
-│   ├── persistent_item.dart  # PersistentItem: interface for database-synced models
-│   └── persistent_list_signal.dart # PersistentListSignal: Signal list backed by Drift table
+│   ├── drift_converters.dart # DriftSignal<T> and SignalConverter<D,S>: signals that sync to DB
+│   ├── persistent_item.dart  # PersistentRow<Ti,R>: mixin for DB-backed model classes
+│   └── persistent_list_signal.dart # PersistentListSignal: Signal list backed by a Drift table
 ├── database/
 │   ├── database.dart         # AppDatabase: Drift SQLite database definition & exports
 │   └── tables/               # Table schemas (tasks_table.dart)
 ├── model/
-│   ├── model.dart            # Barrel: exports AppState, Task, TaskState, PersistentTask
+│   ├── model.dart            # Barrel: exports AppState, Task, TaskModel, TaskState
 │   ├── app_state.dart        # AppState: title, tasks, navigation, current screen, nextId
 │   └── task/
-│       ├── task.dart         # Task model with reactive signal fields
-│       ├── persistent_task.dart # PersistentTask: extends Task with Drift auto-syncing
-│       ├── task_state.dart   # TaskState enum (undone / done / ignored)
-│       └── task_service.dart # Database query service for tasks
+│       ├── task.dart         # Barrel: re-exports TaskModel and TaskState
+│       ├── task_model.dart   # TaskModel: extends Drift Task row with PersistentRow sync
+│       └── task_state.dart   # TaskState enum (undone / done / ignored)
 └── ui/
     ├── theme/                # app_theme.dart, palette.dart
     ├── screens/              # home.dart, task.dart (+ screens.dart barrel)
@@ -35,7 +35,7 @@ lib/
 
 1. `WidgetsFlutterBinding.ensureInitialized()` ensures Flutter engine bindings are initialized.
 2. `AppDatabase` is instantiated, opening the SQLite database `schedium` via `drift_flutter`.
-3. `PersistentListSignal.loadFromDB(db, db.tasks, (r) => model.PersistentTask.fromRow(r))` initializes an empty signal list, queries the tasks table asynchronously, converts each row to a `PersistentTask`, and wires up reactive persistence (`item.syncToDB(db, table)`).
+3. `PersistentListSignal<$TasksTable, Task, TaskModel>.loadFromDB(db, db.tasks, rowToItem)` initializes an empty signal list, queries the tasks table asynchronously, converts each Drift row to a `TaskModel`, and wires up reactive persistence (`item.syncToDB(db, table)`). The `rowToItem` closure constructs a `TaskModel` directly from the row's already-converted `DriftSignal` fields.
 4. An `AppState` is created with the title `Schedium`, the database-backed `tasks` signal, and `nodeId: 0` for Snowflake ID generation.
 5. The `Home` screen is pushed onto the navigation history and `runApp` starts `SchediumApp`.
 
@@ -57,16 +57,19 @@ through the custom history.
 ## Data flow
 
 ```
-UI event ──► mutate a signal (task.title.value = ..., appState.tasks.add(...))
+UI event ──► mutate a DriftSignal (task.title.value = ...)
                 │
                 ├──► SignalBuilder widgets rebuild
-                └──► PersistentTask.syncToDB / PersistentListSignal.add ──► Drift (SQLite)
+                └──► DriftSignal.subscribeToDB listener ──► Drift UPDATE (SQLite)
+
+appState.tasks.add(task) ──► Drift INSERT (SQLite)
+                          └──► task.syncToDB(db, table)  (subscribes all columns)
 ```
 
-State flows one way: widgets mutate signals, and reactive subscriptions
-(`PersistentTask.syncToDB` for task field updates, and `PersistentListSignal.add`
-for new entries) automatically write changes through to the SQLite database via
-Drift.
+State flows one way: widgets mutate `DriftSignal` fields on a `TaskModel`, reactive
+signal subscriptions (set up by `PersistentRow.syncToDB`) automatically issue Drift
+`UPDATE` statements per-column, and `PersistentListSignal.add` handles the initial
+`INSERT` for new tasks.
 
 ## Widget base class
 

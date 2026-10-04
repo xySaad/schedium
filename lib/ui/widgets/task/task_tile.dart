@@ -7,7 +7,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 class TaskTile extends StatelessWidget {
   const TaskTile({super.key, required this.task, required this.onTap});
 
-  final model.Task task;
+  final model.TaskModel task;
   final VoidCallback onTap;
 
   void toggleState(model.TaskState a, b) {
